@@ -1,8 +1,8 @@
-(defproject node "0.0.1"
+(defproject com.jeditoolkit/node "0.0.1"
   :description "core.async flavored interface to a node standard library"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :url "https://github.com/gozala/clojurescript.node"
+  :url "https://github.com/gozala/node.core"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-2138" :scope "provided"]
                  [org.clojure/core.async "0.1.267.0-0d7780-alpha"]]
@@ -28,4 +28,4 @@
                 :source-map "target/cljs/test-advanced.js.map"}}]
    :test-commands {"unit-tests" ["node" :node-runner
                                  "this.literal_js_was_evaluated=true"
-                                 "target/cljs/testable.js"]}}})
+                                 "target/cljs/testable.js"]}})
