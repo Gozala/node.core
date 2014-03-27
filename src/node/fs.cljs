@@ -1,25 +1,26 @@
 (ns node.fs
   (:require [cljs.core.async :as async]
+            [node.type :refer [Input Output IO]]
             [node.stream :refer [pipe-events->channel
                                  pipe-stream->channel
                                  pipe-channel->stream]]
-            [node.async :refer [callback->chan error->chan error?]])
+            [node.async :refer [passback callback->chan error->chan error?]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 
 (def fs (js/require "fs"))
 (def normalize-path (.-_makeLong (js/require "path")))
 (def fs-biding (.binding js/process "fs"))
-(def CONSTANTS (.binding js/process "constants"))
+(def *constants* (.binding js/process "constants"))
 
-(def O_RDONLY (.-O_RDONLY CONSTANTS))
-(def O_SYNC (.-O_SYNC CONSTANTS))
-(def O_RDWR (.-O_RDWR CONSTANTS))
-(def O_TRUNC (.-O_TRUNC CONSTANTS))
-(def O_CREAT (.-O_CREAT CONSTANTS))
-(def O_WRONLY (.-O_WRONLY CONSTANTS))
-(def O_EXCL (.-O_EXCL CONSTANTS))
-(def O_APPEND (.-O_APPEND CONSTANTS))
+(def O_RDONLY (.-O_RDONLY *constants*))
+(def O_SYNC (.-O_SYNC *constants*))
+(def O_RDWR (.-O_RDWR *constants*))
+(def O_TRUNC (.-O_TRUNC *constants*))
+(def O_CREAT (.-O_CREAT *constants*))
+(def O_WRONLY (.-O_WRONLY *constants*))
+(def O_EXCL (.-O_EXCL *constants*))
+(def O_APPEND (.-O_APPEND *constants*))
 
 
 (def Buffer (.-Buffer (js/require "buffer")))
@@ -31,54 +32,66 @@
 (defprotocol IClosable
   (-close [this]))
 
-(def ^:private fd* (async/chan))
 
-
-(deftype FileDescriptor
+(deftype File
   [path flags mode ^:mutable -fd]
   IReadable
   (-read [this options]
-         (go (let [output (async/chan)
-                   auto-close (:auto-close options)
-                   chunk-size (:chunk-size options (* 64 1024))
-                   offset (atom (:offset options 0))
-                   buffer (Buffer. chunk-size)
-                   _ -fd
-                   fd (or -fd (async/<! (callback->chan fs-biding.open
-                                                        [flags mode]
-                                                        false
-                                                        fds)))]
+         (let [output (Input. (async/chan) (async/chan))
+               auto-close (:auto-close options)
+               chunk-size (:chunk-size options (* 64 1024))
+               buffer (Buffer. chunk-size)
+               queue (async/chan)]
+           (go
+            ;; If -fd isn't set, then we need to open file descriptor
+            ;; for an underlaying file and cache it into -fd.
+            (when (nil? -fd)
+              (passback queue             ;; fd is put on a queue when when open
+                        (:error output)   ;; error is put on error channel if open fails
+                        fs-biding.open [flags mode])
+              (set! -fd (async/<! queue)))
 
-               ;; Cache file descriptor in a mutable -fd field
-               (if-not -fd (set! -fd fd))
-               fd
-           (if (error? fd)
-             (error->chan fd false output)
-             (loop []
-                 ;; Queue callback result onto input
-               (let [x (async/<! (callback->chan fs-biding.read
-                                                 [fd buffer 0 chunk-size offset]
-                                                 false
-                                                 files))]
-                 (cond (error? x)
-                       (error->chan x false output)
-
-                       (pos? x)
-                       (do
-                         (swap! offset + x)
-                         (async/>! output (.slice buffer 0 x))
-                         (recur))
-
-                       :else nil)))
+            -fd
 
 
-             (if auto-close
-               (callback->chan fs-biding.close [fd] true output)
-               (async/close! output)))))
-         output)
+            ;; Read chunk and move offset until exhausted. Note that since data is
+            ;; put on a channel followup reads won't happen until consumer takes
+            ;; chunk off a channel.
+            ;; TODO: Abort reads if `(:in output)` is closed, which should be from
+            ;; the other end.
+            (loop [offset (:offset options 0)]
+              (passback queue
+                        (:error output)
+                        fs-biding.read [-fd buffer 0 chunk-size offset])
+
+              (let [n (async/<! queue)]
+                (when (pos? n)
+                  (async/>! (:in input) (.slice buffer 0 n))
+                  (recur (+ offset n)))))
+
+            ;; Once read loop is complete, close file descriptor if
+            ;; auto-close is true.
+            (when auto-close
+              (passback queue
+                        (:error output)
+                        fs-biding.close
+                        [-fd])
+              (async/<! pipe)
+              (set! -fd nil))
+
+            ;; Finally close (:in output) to indicate that read is
+            ;; complete.
+            (async/close! (:in output)))
+
+           ;; Note: If error occurs during IO, that will end up
+           ;; on (:error output) handling such race conditions is
+           ;; user's concern.
+           output))
+  ;; Implement `close` method to be compatible with `with-open`
+  ;; macro.
   Object
   (close [_]
-         (if -fd (.closeSync fs-biding -fd))))
+         (when -fd (.closeSync fs-biding -fd))))
 
 (extend-type string
   IReadable
@@ -89,9 +102,10 @@
 
 (defn file
   ([path] (file path {}))
-  ([path options] (FileDescriptor. (normalize-path path)
-                                   (read-flags (:flags options :r))
-                                   (:mode options 0666))))
+  ([path options] (File. (normalize-path path)
+                         (read-flags (:flags options :r))
+                         (:mode options 0666)
+                         nil)))
 
 
 (defn read-flags
@@ -151,4 +165,13 @@
   ([file options] (-read file options)))
 
 
-(read "/Users/gozala/.vimrc")
+(def x (read "/Users/gozala/.vimrc"))
+
+
+(defn print!
+  [channel]
+  (go (loop []
+        (async/<! channel)
+        (recur))))
+
+(print! (:in x))
