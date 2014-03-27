@@ -2,6 +2,7 @@
   (:require [cljs.core.async :as async])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
+
 (defprotocol IError)
 (extend-type js/Error IError)
 
@@ -32,6 +33,16 @@
                                               :else result))
                             (if auto-close (async/close! output)))))
    channel))
+
+(defn passback
+  ([out error fn params]
+   (passback out error params false))
+  ([out error fn params close?]
+   (apply fn (conj params (fn [falure result]
+                            (if failure
+                              (async/put! error failure)
+                              (async/put! out result))
+                            (when auto-close (async/close! out)))))))
 
 (defn error->chan
   "Takes an error and puts it onto `output` channel. If
