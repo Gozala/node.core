@@ -1,5 +1,5 @@
 (ns node.macros
-  (:require [cljs.core.async :as async]))
+  (:require [clojure.core.async :as async]))
 
 (defmacro await
   [form]
