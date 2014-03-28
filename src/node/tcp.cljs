@@ -89,7 +89,7 @@
               more (cond
                     (nil? packet) (async/close! output)
 
-                    (= source input) (or (>! output packet) packet)
+                    (= source input) (or (async/>! output packet) packet)
 
                     :else nil)]
           (if-not (nil? more) (recur))))))
@@ -97,44 +97,45 @@
 
 (defn print!
   [input id]
-  (go (loop [packet (<! input)]
+  (go (loop [packet (async/<! input)]
         (print id packet)
         (if-not (nil? packet)
-          (recur (<! input))))))
+          (recur (async/<! input))))))
 
 
-(def x1 (async/chan))
-(def x2 (async/chan))
+(comment
+  (def x1 (async/chan))
+  (def x2 (async/chan))
 
-(forward! x1 x2)
+  (forward! x1 x2)
 
-(print! x1 :x1)
-(print! x2 :x2)
+  (print! x1 :x1)
+  (print! x2 :x2)
 
-(async/put! x1 6)
-(async/close! x2)
-
-
-(def client (connect! 6000))
-
-(print! (:in client) :client-input)
-(print! (:error client) :client-error)
-
-(close! client)
+  (async/put! x1 6)
+  (async/close! x2)
 
 
-(defn rdp-message
-  [packet]
-  (let [message (.stringify js/JSON (clj->js packet))
-        length (count message)]
-    (str length ":" message)))
+  (def client (connect! 6000))
+
+  (print! (:in client) :client-input)
+  (print! (:error client) :client-error)
+
+  (close! client)
 
 
-(async/put! (:out client)
-            (rdp-message {:to :root :type :requestTypes}))
-(async/put! (:out client)
-            (rdp-message {:to :root :type :echo :text "hello world"}))
-(async/put! (:out client)
-            (rdp-message {:to :root :type :listTabs}))
+  (defn rdp-message
+    [packet]
+    (let [message (.stringify js/JSON (clj->js packet))
+          length (count message)]
+      (str length ":" message)))
 
-(:out client)
+
+  (async/put! (:out client)
+              (rdp-message {:to :root :type :requestTypes}))
+  (async/put! (:out client)
+              (rdp-message {:to :root :type :echo :text "hello world"}))
+  (async/put! (:out client)
+              (rdp-message {:to :root :type :listTabs}))
+
+  (:out client))

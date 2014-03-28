@@ -1,5 +1,4 @@
-(ns node.env
-  (:require [clojure.data :as data]))
+(ns node.env)
 
 
 (def *env* js/process.env)
@@ -88,12 +87,14 @@
                      (delete! *env* id)
                      (aset *env* id value)))))))
 
-(swap! env assoc :BAR "bar")
-(assert (= (:BAR env) "bar"))
-
-(swap! env dissoc :BAR)
 
 
+;(swap! env assoc :BAR "bar")
+;(assert (= (:BAR env) "bar"))
 
-(:BAR @env)
-(.-BAR *env*)
+;(swap! env dissoc :BAR)
+
+
+
+;(:BAR @env)
+;(.-BAR *env*)
