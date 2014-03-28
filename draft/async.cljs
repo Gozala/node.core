@@ -29,7 +29,7 @@
    (apply fn (conj params (fn [error result]
                             (async/put! output
                                         (cond (error? error) error
-                                              error (Error. error)
+                                              error (js/Error. error)
                                               :else result))
                             (if auto-close (async/close! output)))))
    channel))

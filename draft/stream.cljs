@@ -1,4 +1,4 @@
-(ns node.steam
+(ns node.stream
   (:require [cljs.core.async :as async]))
 
 (defn pipe-events->channel
