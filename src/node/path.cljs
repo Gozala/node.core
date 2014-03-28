@@ -30,9 +30,9 @@
 (defn split
   "Returns the vector of path elements that constitute path
 
-    (node.path/explode \"/Users/Clojure\") ;=> [\"\" \"Users\" \"Clojure\"]"
+    (node.path/split \"/Users/Clojure\") ;=> [\"\" \"Users\" \"Clojure\"]"
   [path]
-  (.split *path* path @*separator*))
+  (.split path @*separator*))
 
 
 (def
@@ -71,11 +71,11 @@
   directory
   (.-dirname *path*))
 
-(def
-  ^{:doc "Return the last portion of a path.
-    Similar to the Unix `basename` command."}
-  file
-  (.-basename *path*))
+(defn file
+  "Return the last portion of a path.
+  Similar to the Unix `basename` command."
+  [path]
+  (.basename *path* path))
 
 (def
   ^{:doc "Return the extension of the path, from the last `.` to end of string
@@ -84,3 +84,4 @@
     string."}
   extension
   (.-extname *path*))
+
