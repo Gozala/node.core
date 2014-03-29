@@ -35,4 +35,4 @@
    :separator (.-sep *path*)})
 
 
-(def runtime (atom *static-fields* (fn [] false)))
+(def runtime (atom *static-fields* :validator (fn [] false)))
