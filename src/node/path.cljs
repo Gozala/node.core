@@ -21,11 +21,18 @@
   [path]
   (.normalize *path* path))
 
-(def
-  ^{:doc "Join all arguments together and normalize the resulting path.
-    Arguments must be strings, otherwise exception is thrown"}
-  join
-  (.-join *path*))
+(defn build
+  "Creates a path given a base path and any number of sub-path extensions.
+  If base is an absolute path, the result is an absolute path, otherwise
+  the result is a relative path.
+
+  The base and sub arguments must be strings, otherwise exception is
+  thrown.
+
+  The build function builds a path without checking the validity of the
+  path or accessing the filesystem."
+  [base & sub-paths]
+  (apply (.-join *path*) base sub-paths))
 
 (defn split
   "Returns the vector of path elements that constitute path
