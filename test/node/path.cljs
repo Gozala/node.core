@@ -8,6 +8,7 @@
                             thrown? run-tests testing
                             test-var]]))
 
+(def windows? (= (:platform @os/runtime) :win32))
 
 
 (when windows?
