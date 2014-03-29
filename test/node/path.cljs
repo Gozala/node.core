@@ -8,19 +8,6 @@
                             thrown? run-tests testing
                             test-var]]))
 
-(deftest *delimiter*
-  (is (satisfies? IDeref path/*delimiter*)
-      "path/*delimiter* is an atom")
-  (is (contains? #{":" ";"} @path/*delimiter*)
-      "path/*delimiter* is one of the delimiters"))
-
-(deftest *separator*
-  (is (satisfies? IDeref path/*separator*)
-      "path/*separator* is an atom")
-  (is (contains? #{"/" "\\"} @path/*separator*)
-      "path/*separator* is one of the separators"))
-
-(def windows? (= @os/platform :win32))
 
 
 (when windows?
