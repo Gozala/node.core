@@ -2,64 +2,37 @@
   (:require [cljs.core.async :as async]))
 
 (def *os* (js/process.binding "os"))
+(def *path* (js/require "path"))
 (def *process* js/process)
 
-(def
-  ^{:doc "Operating system platform"}
-  platform
-  (atom (keyword (.-platform js/process))))
-
-(def
-  ^{:doc "True if windows otherwise false"}
-  windows?
-  (atom (= @platform :win32)))
-
-(def
-  ^{:doc "Endianness of the CPU, either `:BE` or `:LE`"}
-  endianness
-  (atom (keyword (.getEndianness *os*))))
-
-
-(def
-  ^{:doc "Returns the hostname of the operating system"}
-  host-name
-  (atom (.getHostname *os*)))
-
-(def
-  ^{:doc "Returns the operating system name"}
-  type
-  (atom (keyword (.getOSType *os*))))
-
-(def
-  ^{:doc "Returns the operating system CPU architecture"}
-  architecture
-  (atom (keyword (.-arch *process*))))
-
-(def
-  ^{:doc "A constant defining the appropriate End-of-line marker
-    for the operating system."}
-  eol
-  (atom (if @windows? "\r\n" "\n")))
-
-(def
-  ^{:doc "Returns the operating system release."}
-  release
-  (atom (.getOSRelease *os*)))
-
-(def
-  ^{:doc "Returns the total amount of system memory in bytes."}
-  total-system-memory
-  (atom (.getTotalMem *os*)))
+(def ^:private
+  *static-fields*
+  {;; Operating system platform
+   :platform (keyword (.-platform *process*))
+   ;; Endianness of the CPU, either `:BE` or `:LE`
+   :endianness (keyword (.getEndianness *os*))
+   ;; Hostname of the operating system
+   :host-name (.getHostname *os*)
+   ;; Operating system name
+   :type (keyword (.getOSType *os*))
+   ;; Operating system CPU architecture"
+   :architecture (atom (keyword (.-arch *process*)))
+   ;; A constant defining the appropriate End-of-line marker
+   ;; for the operating system.
+   :eol (if (= (.-platform *process*) "win32") "\r\n" "\n")
+   ;; Operating system release
+   :release (.getOSRelease *os*)
+   ;; total amount of system memory in bytes.
+   :total-system-memory (.getTotalMem *os*)
+   ;; vector of maps containing information about each CPU/core
+   ;; installed: model, speed (in MHz)
+   :cpus (vec (map (fn [x] {:model (.-model x)
+                            :speed: (.-speed x)})
+                   (vec (.getCPUs *os*))))
+   ;; The platform-specific path delimiter: `;` or `:`
+   :path-delimiter (.-delimiter *path*)
+   ;; The platform-specific file separator: `\\` or `/`
+   :separator (.-sep *path*)})
 
 
-
-(def
-  ^{:doc "Returns a vector of maps containing information about each CPU/core
-    installed: model, speed (in MHz), and times (an object containing the
-    number of milliseconds the CPU/core spent in: user, nice, sys, idle,
-    and irq)."}
-  cpus
-  (atom (vec (map (fn [x] {:model (.-model x)
-                      :speed: (.-speed x)})
-             (vec (.getCPUs *os*))))))
-
+(def runtime (atom *static-fields* (fn [] false)))
