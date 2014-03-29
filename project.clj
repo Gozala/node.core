@@ -11,13 +11,15 @@
 
   :plugins [[lein-cljsbuild "1.0.2"]
             [com.cemerick/clojurescript.test "0.3.0"]]
+  :hooks [leiningen.cljsbuild]
 
   :cljsbuild
   {:builds
-   [{:id "simple"
-     :source-paths ["src" "test"]
+   [{:source-paths ["src" "test"]
      :compiler {:optimizations :simple
                 :pretty-print true
+                :foreign-libs [{:file "js/process.js"
+                                :provides ["node.process.patch"]}]
                 :output-to "target/cljs/simple.js"}}
     {:id "advanced"
      :source-paths ["src" "test"]
@@ -31,10 +33,10 @@
                           "externs/require.net.js"
                           "externs/require.stream.js"
                           "externs/require.events.js"]
+                :foreign-libs [{:file "js/process.js"
+                                :provides ["node.process.patch"]}]
                 ;:source-map "target/cljs/advanced.js.map"
                 :output-to "target/cljs/advanced.js"}}]
 
    :test-commands {"simple" ["node" :node-runner
-                             "target/cljs/simple.js"]
-                   "advanced" ["node" :node-runner
-                               "target/cljs/advanced.js" ]}})
+                             "target/cljs/simple.js"]}})
