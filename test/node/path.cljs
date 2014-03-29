@@ -59,8 +59,8 @@
          "\\\\unc\\share\\foo\\bar\\" "\\\\unc\\share\\foo"
          "\\\\unc\\share\\foo\\bar\\baz" "\\\\unc\\share\\foo\\bar"))
 
-  (deftest join-windows
-    (are [xs y] (= (apply path/join xs) y)
+  (deftest build-windows
+    (are [xs y] (= (apply path/build xs) y)
          ["//foo/bar"] "//foo/bar/"
          ["\\/foo/bar"] "//foo/bar/"
          ["\\\\foo/bar"] "//foo/bar/"
