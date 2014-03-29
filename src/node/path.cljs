@@ -2,16 +2,6 @@
 
 (def ^:private *path* (js/require "path"))
 
-(def
-  ^{:doc "The platform-specific path delimiter: `;` or `:`"}
-  *delimiter*
-  (atom (.-delimiter *path*)))
-
-(def
-  ^{:doc "The platform-specific file separator: `\\` or `/`"}
-  *separator*
-  (atom (.-sep *path*)))
-
 (defn normalize
   "Normalize a string path, taking care of '..' and '.' parts.
 
