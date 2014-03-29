@@ -1,6 +1,9 @@
-(ns node.path)
+(ns node.path
+  (:require [node.os :as os]
+            [clojure.string :as string]))
 
 (def ^:private *path* (js/require "path"))
+(def ^:private *separator* (if (= (.-sep *path*) "\\") #"\\" #"/"))
 
 (defn normalize
   "Normalize a string path, taking care of '..' and '.' parts.
@@ -29,7 +32,7 @@
 
     (node.path/split \"/Users/Clojure\") ;=> [\"\" \"Users\" \"Clojure\"]"
   [path]
-  (.split path @*separator*))
+  (string/split (normalize path) *separator*))
 
 
 (def
