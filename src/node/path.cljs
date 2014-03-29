@@ -85,3 +85,25 @@
   extension
   (.-extname *path*))
 
+(def ^:private
+  *split-device*
+  #"([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$")
+
+(defn- windows-absolute?
+  [path]
+  (let [[_ device other] (re-matches *split-device* path)
+        unc? (and device (not= (aget device 1) ":"))]
+    (boolean (or other unc?))))
+
+(defn- positx-absolute?
+  [path]
+  (= (aget path 0) \/))
+
+(def
+  ^{:doc "Returns true if path is an absolute path, false otherwise. The path
+    argument can be a path for any platform. If path is not a legal path
+    string false is returned. This function does not access the filesystem."}
+  absolute?
+  (if (= (:platform @os/runtime) :win32)
+    windows-absolute?
+    positx-absolute?))
