@@ -1,6 +1,6 @@
 # node.core
 
-[![Build Status](https://travis-ci.org/Gozala/node.core.svg)](https://travis-ci.org/Gozala/)
+[![Build Status](https://travis-ci.org/Gozala/node.core.svg)](https://travis-ci.org/Gozala/node.core)
 
 
 A [ClojreScript][] interface for working with [nodejs core library]
