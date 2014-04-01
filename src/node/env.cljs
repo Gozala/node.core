@@ -1,30 +1,34 @@
-(ns node.env)
+(ns node.env
+  (:require [node.utils :refer [json->edn delete!]]))
 
 
-(def *env* js/process.env)
+(def ^:private *env* js/process.env)
 
-(defn env->dictionary
-  [env]
-  (persistent! (reduce (fn [dictionary key]
-                         (assoc!
-                          dictionary
-                          (keyword key)
-                          (aget env key)))
-                       (transient {})
-                       (js/Object.keys env))))
+(defn update-env!
+  [present]
+  (doseq [key (set (concat (keys (json->edn *env*))
+                           (keys present)))]
+    (let [id (name key)
+          before (aget *env* id)
+          after (key present)]
+      (if-not (= before after)
+        (if (nil? after)
+          (delete! *env* id)
+          (aset *env* id after))))))
 
-(def
-  ^{:doc "Function that deletes given `field` on the given `target` "}
-  delete!
-  (js/Function "target" "field" "delete target[field]"))
-
-
+;; Unfortunately we can't use plain atom since changes
+;; on the actual `process.ENV` in node aren't observable.
+;; There for we implement atom interface in order to always
+;; return up to date state on dereference.
 (deftype Environment
-  [state meta validator watches]
+  [^:mutable state metadata validator watches]
   Object
-  ;IAtom
+  IAtom
 
-  ;ISwap
+  IEncodeJS
+  (-clj->js [_] *env*)
+
+  ISwap
   (-swap!
    [env f]
    (reset! env (f state)))
@@ -38,25 +42,35 @@
    [env f a b etc]
    (reset! env (apply f state a b etc)))
 
-  ;IReset
+  IReset
   (-reset!
    [env present]
-   (assert (map? present) "Validator rejected reference state")
-   (doseq [[key value] present
-           id (name key)]
-     (if-not (= (aget *env* id) value)
-       (aset *env* id value)))
-   present)
-
+   (let [validate (.-validator env)]
+     (when-not (nil? validate)
+       (assert (validate present) "Validator rejected reference state"))
+     (let [past (.-state env)]
+       (set! (.-state env) present)
+       (update-env! present)
+       (when-not (nil? (.-watches env))
+         (-notify-watches env past present))
+       present)))
 
   IEquiv
   (-equiv [env other] (identical? env other))
 
   IDeref
-  (-deref [_] (env->dictionary *env*))
+  (-deref [env]
+          (let [present (json->edn *env*)]
+            ;; If state has changed since it was last dereferenced
+            ;; we reset state to trigger watchers that may expect
+            ;; to be called. This is not ideal, but it is only option
+            ;; cover changes done from JS side.
+            (if (= state present)
+              state
+              (reset! env present))))
 
   IMeta
-  (-meta [_] meta)
+  (-meta [_] metadata)
 
   IPrintWithWriter
   (-pr-writer [env writer opts]
@@ -73,28 +87,17 @@
   (-remove-watch [this key]
                  (set! (.-watches this) (dissoc watches key))))
 
-(def env (Environment. (env->dictionary *env*)
-                       {}
-                       map?
-                       nil))
+(defn- string|number?
+  [x]
+  (or (string? x)
+      (number? x)))
 
-(add-watch env :update
-           (fn [_ env past present]
-             (doseq [[key value] present]
-               (let [id (name key)]
-                 (if-not (= (aget *env* id) value)
-                   (if (nil? value)
-                     (delete! *env* id)
-                     (aset *env* id value)))))))
+(defn- keyword->string-map?
+  [x]
+  (and (map? x)
+       (every? keyword? (keys x))
+       (every? string|number? (vals x))))
 
+(def env (Environment. (json->edn *env*) {} keyword->string-map? nil))
 
-
-;(swap! env assoc :BAR "bar")
-;(assert (= (:BAR env) "bar"))
-
-;(swap! env dissoc :BAR)
-
-
-
-;(:BAR @env)
-;(.-BAR *env*)
+(add-watch env nil (fn [_ _ _ state] (update-env! state)))

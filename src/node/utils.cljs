@@ -35,3 +35,9 @@
          #(let [value (json->edn %)]
             (when-not (= value (field @target))
               (swap! target assoc field value))))))
+
+(def
+  ^{:doc "Function takes `target` object and `field` string arguments.
+    In side effect it deletes `field` from the given `target`"}
+  delete!
+  (js/Function "target" "field" "delete target[field]; target;"))
