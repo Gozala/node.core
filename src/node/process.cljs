@@ -6,6 +6,8 @@
             [clojure.string :as string]))
 
 (def ^:private *process* js/process)
+(def ^:private *env* (.-env *process*))
+(def ^:private windows? (= "win32" (.-platform *process*)))
 
 (def ^:private
   *static-fields*
@@ -48,7 +50,18 @@
    :architecture (keyword (.-arch *process*))
    ;; What platform you're running on: :darwin, :freebsd, :linux,
    ;; :sunos or :win32
-   :platform (keyword (.-platform *process*))})
+   :platform (keyword (.-platform *process*))
+   ;; Operating system's default directory for temp files.
+   :temp-directory (if windows?
+                     (or (.-TEMP *env*)
+                         (.-TMP *env*)
+                         (str (or (.-SystemRoot *env*)
+                                  (.-windir *env*))
+                              "\\temp"))
+                     (or (.-TMPDIR *env*)
+                         (.-TMP *env*)
+                         (.-TEMP *env*)
+                         "/tmp"))})
 
 
 (def ^:private
@@ -66,7 +79,7 @@
           ;; Process's file mode creation mask. Child processes inherit the mask
           ;; from the parent process.
           :mask (.umask *process*)}
-         (when-not (= :win32 (:platform *static-fields*))
+         (when-not windows?
            ;; Note: this function is only available on POSIX platforms
            ;; (i.e. not Windows)
            {;; Gets the group identity of the process. (See getgid(2).)

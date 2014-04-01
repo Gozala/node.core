@@ -9,7 +9,7 @@
                             thrown? run-tests testing
                             test-var]]))
 
-
+(def *os* (js/require "os"))
 (def posix? (not= :win32 (:platform @process)))
 
 (deftest process-type
@@ -33,6 +33,7 @@
        :platform #{:darwin :freebsd :linux :sunos :win32}
        :title string?
        :working-directory string?
+       :temp-directory string?
        :max-next-depth integer?
        :mask integer?
        :group-id (if posix? integer? nil?)
@@ -52,6 +53,7 @@
        :platform #(keyword (.-platform %))
        :title #(.-title %)
        :working-directory #(.cwd %)
+       :temp-directory (fn [_] (.tmpdir *os*))
        :max-next-depth #(.-maxTickDepth %)
        :mask #(.umask %)
        :group-id #(if posix? (.getgid %))
