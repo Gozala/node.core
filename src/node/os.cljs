@@ -1,9 +1,10 @@
 (ns node.os
-  (:require [cljs.core.async :as async]))
+  (:require [cljs.core.async :as async]
+            [node.utils :refer [json->edn]]))
 
-(def *os* (js/process.binding "os"))
-(def *path* (js/require "path"))
-(def *process* js/process)
+(def ^:private *os* (js/process.binding "os"))
+(def ^:private *path* (js/require "path"))
+(def ^:private *process* js/process)
 
 (def ^:private
   *static-fields*
@@ -16,7 +17,7 @@
    ;; Operating system name
    :type (keyword (.getOSType *os*))
    ;; Operating system CPU architecture"
-   :architecture (atom (keyword (.-arch *process*)))
+   :architecture (keyword (.-arch *process*))
    ;; A constant defining the appropriate End-of-line marker
    ;; for the operating system.
    :eol (if (= (.-platform *process*) "win32") "\r\n" "\n")
@@ -27,12 +28,14 @@
    ;; vector of maps containing information about each CPU/core
    ;; installed: model, speed (in MHz)
    :cpus (vec (map (fn [x] {:model (.-model x)
-                            :speed: (.-speed x)})
+                            :speed (.-speed x)})
                    (vec (.getCPUs *os*))))
+   :network-interfaces (json->edn (.getInterfaceAddresses *os*))
    ;; The platform-specific path delimiter: `;` or `:`
    :path-delimiter (.-delimiter *path*)
    ;; The platform-specific file separator: `\\` or `/`
-   :separator (.-sep *path*)})
+   :path-separator (.-sep *path*)})
 
 
-(def runtime (atom *static-fields* :validator (fn [] false)))
+(def os (atom *static-fields* :validator (fn [] false)))
+
