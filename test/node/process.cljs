@@ -13,7 +13,7 @@
 (def posix? (not= :win32 (:platform @process)))
 
 (deftest process-type
-  (is (satisfies? IDeref process)
+  (is (satisfies? IAtom process)
       "node.process/process is an atom"))
 
 
