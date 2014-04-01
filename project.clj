@@ -21,7 +21,7 @@
                 :foreign-libs [{:file "js/process.js"
                                 :provides ["node.process.patch"]}]
                 :output-to "target/cljs/simple.js"}}
-    {:id "advanced"
+    #_ {:id "advanced"
      :source-paths ["src" "test"]
      :compiler {:optimizations :advanced
                 :pretty-print false
