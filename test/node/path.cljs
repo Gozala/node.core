@@ -1,15 +1,13 @@
 (ns test.node.path
   (:require [cemerick.cljs.test :as test]
             [node.path :as path]
-            [clojure.string :as string]
-            [node.os :as os])
+            [clojure.string :as string])
   (:require-macros [cemerick.cljs.test
                     :refer [is are deftest done with-test
                             thrown? run-tests testing
                             test-var]]))
 
-(def windows? (= (:platform @os/runtime) :win32))
-
+(def windows? (= "win32" (.-platform js/process)))
 
 (when windows?
   (deftest file-windows

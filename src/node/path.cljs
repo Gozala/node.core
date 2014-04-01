@@ -1,7 +1,7 @@
 (ns node.path
-  (:require [node.os :as os]
-            [clojure.string :as string]))
+  (:require [clojure.string :as string]))
 
+(def ^:private windows? (= "win32" (.-platform js/process)))
 (def ^:private *path* (js/require "path"))
 (def ^:private *separator* (if (= (.-sep *path*) "\\") #"\\" #"/"))
 
@@ -104,6 +104,4 @@
     argument can be a path for any platform. If path is not a legal path
     string false is returned. This function does not access the filesystem."}
   absolute?
-  (if (= (:platform @os/runtime) :win32)
-    windows-absolute?
-    positx-absolute?))
+  (if windows? windows-absolute? positx-absolute?))
