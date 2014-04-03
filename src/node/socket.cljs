@@ -13,7 +13,7 @@
 (defprotocol ISocket
   (buffer-size [socket] "")
   (encoding [socket] )
-  (address [socket])
+  (local-address [socket])
   (remote-address [socket]))
 
 (defprotocol IServer
@@ -30,23 +30,25 @@
 
 
 (defrecord Socket
-  [in out error node-socket]
+  [in out error socket]
   ICloseable
   (close! [_] (async/close! out))
   ISocket
-  (encoding [_] (.-encoding node-socket))
-  (local-address [_] (->address (.address node-socket)))
-  (remote-address [_] (->address (.remoteAddress node-socket)))
+  (encoding [_] (.-encoding socket))
+  (local-address [_] (->address (.address socket)))
+  (remote-address [_] (Address. (.-remotePort socket)
+                                (.-remoteAddress socket)
+                                nil))
   IEncodeJS
-  (-clj->js [_] node-socket))
+  (-clj->js [_] socket))
 
 
 (defrecord Server
-  [accept error node-server]
+  [accept error server]
   ICloseable
-  (close! [_] (.close node-server))
+  (close! [_] (.close server))
   IServer
-  (address [_] (->address (.address node-server)))
-  (max-connections [_] (.-maxConnections node-server))
+  (address [_] (->address (.address server)))
+  (max-connections [_] (.-maxConnections server))
   IEncodeJS
-  (-clj->js [_] node-server))
+  (-clj->js [_] server))
