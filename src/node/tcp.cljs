@@ -35,7 +35,13 @@
     ;; Pipe data from `out` channel to a node socket. Closing
     ;; `out` will half close (send `FIN` packet) to remote end
     ;; of the socket.
-    (go (loop [packet (<! out)]
+    (go ;; If socket is connecting it's not writable yet and
+        ;; in such case wait for ::connect message on stabilizer,
+        ;; otherwise (it is a server connection) just move on to
+        ;; writing.
+        (when-not (.-writable socket)
+          (async/<! stabilizer))
+        (loop [packet (async/<! out)]
           (if (nil? packet)
             ;; Send `FIN` if `out` is closed by a consumer.
             (.end socket)
