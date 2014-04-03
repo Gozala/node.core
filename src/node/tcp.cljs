@@ -67,6 +67,11 @@
     (Server. accept error server)))
 
 (def close! node.socket/close!)
+(def address node.socket/address)
+(def remote-address node.socket/remote-address)
+(def local-address node.socket/local-address)
+(def encoding node.socket/encoding)
+(def max-connections node.socket/max-connections)
 
 
 (defn listen!
