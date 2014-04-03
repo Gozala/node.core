@@ -14,7 +14,7 @@
         error (async/chan)
         stabilizer (async/chan)]
 
-    (.on socket "connect" #())
+    (.on socket "connect" #(async/put! stabilizer ::connect))
     ;; When socket output is drained put ::drain on stabilizer
     ;; that will resume pumping packets from `out` channel into
     ;; socket
