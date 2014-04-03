@@ -49,9 +49,9 @@
               ;; Write a packet from `out` channel into a socket. If entire
               ;; packet was not flushed block until drained.
               (if-not (.write socket packet)
-                (<! stabilizer))
+                (async/<! stabilizer))
               ;; And then handle new packet.
-              (recur (<! out))))))
+              (recur (async/<! out))))))
 
     (Socket. in out error socket)))
 
